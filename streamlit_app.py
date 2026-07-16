@@ -44,7 +44,21 @@ def load_dashboard(client_slug: str, start_date: date, end_date: date) -> pd.Dat
 
 @st.cache_data(ttl=120, show_spinner=False)
 def load_latest_data_date(client_slug: str) -> date | None:
-    return store().latest_dashboard_stat_date(client_slug)
+    db = store()
+    if hasattr(db, "latest_dashboard_stat_date"):
+        return db.latest_dashboard_stat_date(client_slug)
+
+    query = (
+        db.client.table("campaign_dashboard")
+        .select("stat_date")
+        .eq("client_slug", client_slug)
+        .order("stat_date", desc=True)
+        .limit(1)
+    )
+    rows = query.execute().data or []
+    if not rows:
+        return None
+    return date.fromisoformat(str(rows[0]["stat_date"]))
 
 
 st.title("Snapchat Campaign Dashboard")
