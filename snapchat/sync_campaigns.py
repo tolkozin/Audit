@@ -52,23 +52,24 @@ def sync_campaign_stats(
                 campaign_snap_id = str(campaign.get("id") or "")
                 if not campaign_snap_id:
                     continue
-                payload = api.campaign_stats_daily(
-                    campaign_snap_id,
-                    start,
-                    end,
-                    fields,
-                    account.get("timezone") or "UTC",
-                    attribution_params(account.get("attribution_window")),
-                )
-                stat_rows.extend(
-                    _rows_from_stats_payload(
-                        payload=payload,
-                        account=account,
-                        campaign_snap_id=campaign_snap_id,
-                        campaign_db_id=campaign_id_map.get(campaign_snap_id),
-                        field_map=field_map,
+                for chunk_start, chunk_end in _date_chunks(start, end, max_days=32):
+                    payload = api.campaign_stats_daily(
+                        campaign_snap_id,
+                        chunk_start,
+                        chunk_end,
+                        fields,
+                        account.get("timezone") or "UTC",
+                        attribution_params(account.get("attribution_window")),
                     )
-                )
+                    stat_rows.extend(
+                        _rows_from_stats_payload(
+                            payload=payload,
+                            account=account,
+                            campaign_snap_id=campaign_snap_id,
+                            campaign_db_id=campaign_id_map.get(campaign_snap_id),
+                            field_map=field_map,
+                        )
+                    )
 
             rows_upserted = store.replace_campaign_stats(account["id"], start, end, stat_rows)
             store.prune_old_stats(account["id"], keep_from)
@@ -100,6 +101,14 @@ def sync_campaign_stats(
     return results
 
 
+def _date_chunks(start: date, end: date, max_days: int):
+    cursor = start
+    while cursor < end:
+        chunk_end = min(end, cursor + timedelta(days=max_days))
+        yield cursor, chunk_end
+        cursor = chunk_end
+
+
 def _ensure_account_metadata(
     store: SupabaseStore,
     api: SnapchatMarketingAPI,
@@ -111,7 +120,7 @@ def _ensure_account_metadata(
     metadata = api.get_ad_account(account["snapchat_ad_account_id"])
     timezone = metadata.get("timezone") or account.get("timezone") or "UTC"
     currency = metadata.get("currency") or account.get("currency")
-    account_name = metadata.get("name") or account.get("account_name")
+    account_name = (metadata.get("name") or account.get("account_name") or "").strip()
     store.update_ad_account_metadata(
         account["id"],
         account_name=account_name,
