@@ -65,6 +65,22 @@ class SupabaseStore:
         )
         return {row["snapchat_campaign_id"]: row["id"] for row in existing}
 
+    def update_ad_account_metadata(
+        self,
+        ad_account_id: str,
+        account_name: str | None = None,
+        currency: str | None = None,
+        timezone: str | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {"updated_at": _now_iso()}
+        if account_name:
+            payload["account_name"] = account_name
+        if currency:
+            payload["currency"] = currency
+        if timezone:
+            payload["timezone"] = timezone
+        self.client.table("ad_accounts").update(payload).eq("id", ad_account_id).execute()
+
     def replace_campaign_stats(
         self,
         ad_account_id: str,

@@ -39,6 +39,7 @@ def sync_campaign_stats(
         sync_id = store.create_sync_run(client["slug"], account["id"], start, end, refresh_days)
         rows_upserted = 0
         try:
+            account = _ensure_account_metadata(store, api, account)
             campaigns = api.list_campaigns(account["snapchat_ad_account_id"])
             campaign_id_map = store.upsert_campaigns(account["id"], campaigns)
 
@@ -99,6 +100,31 @@ def sync_campaign_stats(
     return results
 
 
+def _ensure_account_metadata(
+    store: SupabaseStore,
+    api: SnapchatMarketingAPI,
+    account: dict[str, Any],
+) -> dict[str, Any]:
+    if account.get("timezone") and account.get("currency"):
+        return account
+
+    metadata = api.get_ad_account(account["snapchat_ad_account_id"])
+    timezone = metadata.get("timezone") or account.get("timezone") or "UTC"
+    currency = metadata.get("currency") or account.get("currency")
+    account_name = metadata.get("name") or account.get("account_name")
+    store.update_ad_account_metadata(
+        account["id"],
+        account_name=account_name,
+        currency=currency,
+        timezone=timezone,
+    )
+    updated = dict(account)
+    updated["timezone"] = timezone
+    updated["currency"] = currency
+    updated["account_name"] = account_name
+    return updated
+
+
 def attribution_params(attribution_window: str | None) -> dict[str, str]:
     if not attribution_window:
         return {}
@@ -116,6 +142,22 @@ def attribution_params(attribution_window: str | None) -> dict[str, str]:
         "7_DAY_CLICK_0_DAY_VIEW": {
             "swipe_up_attribution_window": "7_DAY",
             "view_attribution_window": "none",
+        },
+        "1_DAY_SWIPE_3_HOUR_VIEW": {
+            "swipe_up_attribution_window": "1_DAY",
+            "view_attribution_window": "3_HOUR",
+        },
+        "1_DAY_CLICK_3_HOUR_VIEW": {
+            "swipe_up_attribution_window": "1_DAY",
+            "view_attribution_window": "3_HOUR",
+        },
+        "7_DAY_SWIPE_3_HOUR_VIEW": {
+            "swipe_up_attribution_window": "7_DAY",
+            "view_attribution_window": "3_HOUR",
+        },
+        "7_DAY_CLICK_3_HOUR_VIEW": {
+            "swipe_up_attribution_window": "7_DAY",
+            "view_attribution_window": "3_HOUR",
         },
         "28_DAY_SWIPE_1_DAY_VIEW": {
             "swipe_up_attribution_window": "28_DAY",

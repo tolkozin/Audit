@@ -57,6 +57,13 @@ class SnapchatMarketingAPI:
 
         return campaigns
 
+    def get_ad_account(self, ad_account_id: str) -> dict[str, Any]:
+        payload = self.get(f"/adaccounts/{ad_account_id}")
+        rows = _unwrap_collection(payload, "adaccounts", "adaccount")
+        if not rows:
+            raise RuntimeError(f"Snap ad account {ad_account_id} was not returned")
+        return rows[0]
+
     def campaign_stats_daily(
         self,
         campaign_id: str,

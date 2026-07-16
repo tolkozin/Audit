@@ -50,13 +50,17 @@ python scripts/sync_campaigns.py --refresh-days 3
 The database stores attribution window on the ad account and copies it into every
 stats row. If attribution is not configured yet, the sync omits that parameter.
 
-Supported attribution preset for Space307:
+Supported attribution presets:
 
 ```text
+1_DAY_SWIPE_3_HOUR_VIEW
 7_DAY_SWIPE_0_DAY_VIEW
+7_DAY_SWIPE_1_DAY_VIEW
+7_DAY_SWIPE_3_HOUR_VIEW
 ```
 
-This is sent to Snapchat as:
+These are sent to Snapchat as `swipe_up_attribution_window` and
+`view_attribution_window` parameters. For example:
 
 ```text
 swipe_up_attribution_window=7_DAY

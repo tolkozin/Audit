@@ -52,7 +52,7 @@ if not accounts:
 options = []
 for account in accounts:
     client = account["clients"]
-    label = f"{client['name']} · {account['account_name']}"
+    label = account["account_name"]
     options.append((label, client["slug"], account))
 
 with st.sidebar:
@@ -63,12 +63,13 @@ with st.sidebar:
     account = selected[2]
 
     today = date.today()
-    default_start = today - timedelta(days=30)
-    period = st.date_input("Date range", value=(default_start, today), max_value=today)
-    if isinstance(period, tuple) and len(period) == 2:
-        start_date, end_date = period
-    else:
-        start_date, end_date = default_start, today
+    period_label = st.segmented_control(
+        "Date range",
+        options=["7 days", "14 days", "30 days", "90 days"],
+        default="30 days",
+    )
+    period_days = {"7 days": 7, "14 days": 14, "30 days": 30, "90 days": 90}[period_label]
+    start_date, end_date = today - timedelta(days=period_days - 1), today
 
     st.caption(f"Attribution window: `{account.get('attribution_window') or 'not set'}`")
     st.caption(f"Default type: `{account.get('default_delivery_type') or 'unknown'}`")
@@ -117,14 +118,14 @@ total_installs = df["app_installs"].sum()
 total_signups = df["sign_ups_total"].sum()
 total_purchases = df["purchases_total"].sum()
 
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4 = st.columns(4)
 col1.metric("Amount Spent", money(total_spend, currency))
 col2.metric("App Installs", number(total_installs))
-col3.metric("Cost Per Install", money(total_spend / total_installs if total_installs else None, currency))
-col4.metric("Sign Ups Total", number(total_signups))
-col5.metric("Purchases Total", number(total_purchases))
+col3.metric("Sign Ups Total", number(total_signups))
+col4.metric("Purchases Total", number(total_purchases))
 
-col6, col7 = st.columns(2)
+col5, col6, col7 = st.columns(3)
+col5.metric("Cost Per Install", money(total_spend / total_installs if total_installs else None, currency))
 col6.metric("Cost Per Sign Up", money(total_spend / total_signups if total_signups else None, currency))
 col7.metric("Cost Per Purchase", money(total_spend / total_purchases if total_purchases else None, currency))
 
@@ -133,17 +134,38 @@ daily = (
     .sum()
     .sort_values("stat_date")
 )
+daily["stat_date"] = pd.to_datetime(daily["stat_date"]).dt.date
+all_dates = pd.DataFrame({"stat_date": pd.date_range(start_date, end_date).date})
+daily = all_dates.merge(daily, on="stat_date", how="left").fillna(
+    {
+        "amount_spent": 0,
+        "app_installs": 0,
+        "sign_ups_total": 0,
+        "purchases_total": 0,
+    }
+)
 
 st.subheader("Daily Trend")
-metric = st.segmented_control(
-    "Metric",
-    options=["amount_spent", "app_installs", "sign_ups_total", "purchases_total"],
-    default="amount_spent",
-    label_visibility="collapsed",
+spend_fig = px.bar(daily, x="stat_date", y="amount_spent", labels={"amount_spent": "Amount Spent"})
+spend_fig.update_layout(height=320, margin=dict(l=10, r=10, t=20, b=10))
+st.plotly_chart(spend_fig, use_container_width=True)
+
+events_daily = daily.melt(
+    id_vars="stat_date",
+    value_vars=["app_installs", "sign_ups_total", "purchases_total"],
+    var_name="metric",
+    value_name="value",
 )
-fig = px.line(daily, x="stat_date", y=metric, markers=True)
-fig.update_layout(height=360, margin=dict(l=10, r=10, t=20, b=10))
-st.plotly_chart(fig, use_container_width=True)
+events_daily["metric"] = events_daily["metric"].map(
+    {
+        "app_installs": "App Installs",
+        "sign_ups_total": "Sign Ups Total",
+        "purchases_total": "Purchases Total",
+    }
+)
+events_fig = px.line(events_daily, x="stat_date", y="value", color="metric", markers=True)
+events_fig.update_layout(height=340, margin=dict(l=10, r=10, t=20, b=10), legend_title_text="")
+st.plotly_chart(events_fig, use_container_width=True)
 
 st.subheader("Campaigns")
 campaign_table = (
