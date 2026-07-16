@@ -42,6 +42,11 @@ def load_dashboard(client_slug: str, start_date: date, end_date: date) -> pd.Dat
     return pd.DataFrame(rows)
 
 
+@st.cache_data(ttl=120, show_spinner=False)
+def load_latest_data_date(client_slug: str) -> date | None:
+    return store().latest_dashboard_stat_date(client_slug)
+
+
 st.title("Snapchat Campaign Dashboard")
 
 accounts = load_accounts()
@@ -62,15 +67,18 @@ with st.sidebar:
     client_slug = selected[1]
     account = selected[2]
 
-    today = date.today()
+    latest_data_date = load_latest_data_date(client_slug)
     period_label = st.segmented_control(
         "Date range",
         options=["7 days", "14 days", "30 days", "90 days"],
         default="30 days",
     )
     period_days = {"7 days": 7, "14 days": 14, "30 days": 30, "90 days": 90}[period_label]
-    start_date, end_date = today - timedelta(days=period_days - 1), today
+    end_date = latest_data_date or date.today()
+    start_date = end_date - timedelta(days=period_days - 1)
 
+    if latest_data_date:
+        st.caption(f"Data through: `{latest_data_date.isoformat()}`")
     st.caption(f"Attribution window: `{account.get('attribution_window') or 'not set'}`")
     st.caption(f"Default type: `{account.get('default_delivery_type') or 'unknown'}`")
 

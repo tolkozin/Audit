@@ -177,6 +177,22 @@ class SupabaseStore:
                 return rows
             offset += page_size
 
+    def latest_dashboard_stat_date(self, client_slug: str | None) -> date | None:
+        query = (
+            self.client.table("campaign_dashboard")
+            .select("stat_date")
+            .order("stat_date", desc=True)
+            .limit(1)
+        )
+        if client_slug:
+            query = query.eq("client_slug", client_slug)
+
+        rows = query.execute().data or []
+        if not rows:
+            return None
+
+        return date.fromisoformat(str(rows[0]["stat_date"]))
+
     def dashboard_clients(self) -> list[dict[str, Any]]:
         return (
             self.client.table("ad_accounts")
