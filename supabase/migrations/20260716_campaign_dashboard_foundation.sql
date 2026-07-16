@@ -18,7 +18,7 @@ create table if not exists public.ad_accounts (
   timezone text,
   attribution_window text,
   default_delivery_type text not null default 'unknown' check (default_delivery_type in ('app', 'web', 'mixed', 'unknown')),
-  stats_field_map jsonb not null default '{"amount_spent":"spend","app_installs":"app_installs","sign_ups_total":"sign_ups","purchases_total":"purchases"}'::jsonb,
+  stats_field_map jsonb not null default '{"amount_spent":"spend","app_installs":"total_installs","sign_ups_total":"conversion_sign_ups","purchases_total":"conversion_purchases"}'::jsonb,
   is_active boolean not null default true,
   last_synced_at timestamptz,
   created_at timestamptz not null default now(),

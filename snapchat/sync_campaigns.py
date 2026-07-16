@@ -10,9 +10,9 @@ from .supabase_store import SupabaseStore
 
 DEFAULT_FIELD_MAP = {
     "amount_spent": "spend",
-    "app_installs": "app_installs",
-    "sign_ups_total": "sign_ups",
-    "purchases_total": "purchases",
+    "app_installs": "total_installs",
+    "sign_ups_total": "conversion_sign_ups",
+    "purchases_total": "conversion_purchases",
 }
 
 
@@ -56,7 +56,7 @@ def sync_campaign_stats(
                     start,
                     end,
                     fields,
-                    account.get("attribution_window"),
+                    attribution_params(account.get("attribution_window")),
                 )
                 stat_rows.extend(
                     _rows_from_stats_payload(
@@ -96,6 +96,42 @@ def sync_campaign_stats(
             )
 
     return results
+
+
+def attribution_params(attribution_window: str | None) -> dict[str, str]:
+    if not attribution_window:
+        return {}
+
+    normalized = attribution_window.strip().upper()
+    presets = {
+        "7_DAY_SWIPE_0_DAY_VIEW": {
+            "swipe_up_attribution_window": "7_DAY",
+            "view_attribution_window": "none",
+        },
+        "7_DAY_SWIPE_NONE_VIEW": {
+            "swipe_up_attribution_window": "7_DAY",
+            "view_attribution_window": "none",
+        },
+        "7_DAY_CLICK_0_DAY_VIEW": {
+            "swipe_up_attribution_window": "7_DAY",
+            "view_attribution_window": "none",
+        },
+        "28_DAY_SWIPE_1_DAY_VIEW": {
+            "swipe_up_attribution_window": "28_DAY",
+            "view_attribution_window": "1_DAY",
+        },
+        "7_DAY_SWIPE_1_DAY_VIEW": {
+            "swipe_up_attribution_window": "7_DAY",
+            "view_attribution_window": "1_DAY",
+        },
+    }
+    if normalized in presets:
+        return presets[normalized]
+
+    raise ValueError(
+        f"Unsupported attribution_window {attribution_window!r}. "
+        "Add it to snapchat.sync_campaigns.attribution_params."
+    )
 
 
 def _rows_from_stats_payload(

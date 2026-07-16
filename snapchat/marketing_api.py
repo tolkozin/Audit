@@ -62,7 +62,7 @@ class SnapchatMarketingAPI:
         start_date: date,
         end_date: date,
         fields: Iterable[str],
-        attribution_window: str | None = None,
+        attribution_params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         params: dict[str, Any] = {
             "granularity": "DAY",
@@ -70,8 +70,8 @@ class SnapchatMarketingAPI:
             "end_time": _midnight_utc(end_date),
             "fields": ",".join(dict.fromkeys(fields)),
         }
-        if attribution_window:
-            params["attribution_window"] = attribution_window
+        if attribution_params:
+            params.update(attribution_params)
 
         return self.get(f"/campaigns/{campaign_id}/stats", params=params)
 
