@@ -5,6 +5,7 @@ secrets/
 *.secret
 .env
 .env.*
+.streamlit/secrets.toml
 
 # ── Client data — keep local only ──
 1xBet/
@@ -35,3 +36,6 @@ __pycache__/
 *.jpg
 *.png
 *.pdf
+*.db
+*.sqlite
+data/

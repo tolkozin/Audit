@@ -1,0 +1,46 @@
+name: Sync Snapchat Campaign Stats
+
+on:
+  schedule:
+    - cron: "15 5 * * *"
+  workflow_dispatch:
+    inputs:
+      client:
+        description: "Optional client slug, e.g. space307"
+        required: false
+        type: string
+      refresh_days:
+        description: "How many recent days to refresh"
+        required: false
+        default: "3"
+        type: string
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run sync
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SNAP_CLIENT_ID: ${{ secrets.SNAP_CLIENT_ID }}
+          SNAP_CLIENT_SECRET: ${{ secrets.SNAP_CLIENT_SECRET }}
+          SNAP_REFRESH_TOKEN: ${{ secrets.SNAP_REFRESH_TOKEN }}
+          CLIENT_INPUT: ${{ github.event.inputs.client || '' }}
+          REFRESH_DAYS_INPUT: ${{ github.event.inputs.refresh_days || '3' }}
+        run: |
+          if [ -n "$CLIENT_INPUT" ]; then
+            python scripts/sync_campaigns.py --client "$CLIENT_INPUT" --refresh-days "$REFRESH_DAYS_INPUT"
+          else
+            python scripts/sync_campaigns.py --refresh-days "$REFRESH_DAYS_INPUT"
+          fi
