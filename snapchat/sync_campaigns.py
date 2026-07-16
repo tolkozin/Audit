@@ -120,7 +120,7 @@ def _ensure_account_metadata(
     metadata = api.get_ad_account(account["snapchat_ad_account_id"])
     timezone = metadata.get("timezone") or account.get("timezone") or "UTC"
     currency = metadata.get("currency") or account.get("currency")
-    account_name = (metadata.get("name") or account.get("account_name") or "").strip()
+    account_name = (metadata.get("name") or account.get("account_name") or "").replace("\t", "").strip()
     store.update_ad_account_metadata(
         account["id"],
         account_name=account_name,
