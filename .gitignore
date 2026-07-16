@@ -1,0 +1,37 @@
+# ── Secrets — NEVER commit ──
+snapchat/credentials.json
+snapchat/accounts.json
+secrets/
+*.secret
+.env
+.env.*
+
+# ── Client data — keep local only ──
+1xBet/
+Endel/
+Hula/
+Kegel/
+Metro Brazil/
+PolicyBazaar/
+Space307/
+Sporty/
+StarzPlay/
+
+# ── Local junk ──
+.DS_Store
+__pycache__/
+*.pyc
+
+# ── Large binaries ──
+*.key
+
+# ── Raw/export artifacts ──
+*.csv
+*.xlsx
+*.docx
+*.pptx
+*.mp4
+*.jpeg
+*.jpg
+*.png
+*.pdf
