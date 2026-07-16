@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterable
-from datetime import date, datetime, time as dt_time, timezone
+from datetime import date, datetime, time as dt_time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -62,12 +63,13 @@ class SnapchatMarketingAPI:
         start_date: date,
         end_date: date,
         fields: Iterable[str],
+        timezone_name: str,
         attribution_params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         params: dict[str, Any] = {
             "granularity": "DAY",
-            "start_time": _midnight_utc(start_date),
-            "end_time": _midnight_utc(end_date),
+            "start_time": _midnight_in_timezone(start_date, timezone_name),
+            "end_time": _midnight_in_timezone(end_date, timezone_name),
             "fields": ",".join(dict.fromkeys(fields)),
         }
         if attribution_params:
@@ -76,10 +78,9 @@ class SnapchatMarketingAPI:
         return self.get(f"/campaigns/{campaign_id}/stats", params=params)
 
 
-def _midnight_utc(value: date) -> str:
-    return datetime.combine(value, dt_time.min, tzinfo=timezone.utc).isoformat().replace(
-        "+00:00", "Z"
-    )
+def _midnight_in_timezone(value: date, timezone_name: str) -> str:
+    timezone = ZoneInfo(timezone_name or "UTC")
+    return datetime.combine(value, dt_time.min, tzinfo=timezone).isoformat()
 
 
 def _unwrap_collection(payload: dict[str, Any], outer_key: str, inner_key: str) -> list[dict[str, Any]]:

@@ -23,6 +23,8 @@ def main() -> None:
         keep_days=args.keep_days,
     )
     print(json.dumps(result, indent=2))
+    if any(row.get("status") == "failed" for row in result):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -56,6 +56,7 @@ def sync_campaign_stats(
                     start,
                     end,
                     fields,
+                    account.get("timezone") or "UTC",
                     attribution_params(account.get("attribution_window")),
                 )
                 stat_rows.extend(
