@@ -155,16 +155,27 @@ class SupabaseStore:
         start_date: date,
         end_date: date,
     ) -> list[dict[str, Any]]:
-        query = (
-            self.client.table("campaign_dashboard")
-            .select("*")
-            .gte("stat_date", start_date.isoformat())
-            .lte("stat_date", end_date.isoformat())
-            .order("stat_date")
-        )
-        if client_slug:
-            query = query.eq("client_slug", client_slug)
-        return query.execute().data or []
+        page_size = 1000
+        offset = 0
+        rows: list[dict[str, Any]] = []
+
+        while True:
+            query = (
+                self.client.table("campaign_dashboard")
+                .select("*")
+                .gte("stat_date", start_date.isoformat())
+                .lte("stat_date", end_date.isoformat())
+                .order("stat_date")
+                .range(offset, offset + page_size - 1)
+            )
+            if client_slug:
+                query = query.eq("client_slug", client_slug)
+
+            page = query.execute().data or []
+            rows.extend(page)
+            if len(page) < page_size:
+                return rows
+            offset += page_size
 
     def dashboard_clients(self) -> list[dict[str, Any]]:
         return (

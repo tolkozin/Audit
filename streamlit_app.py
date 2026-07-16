@@ -98,6 +98,12 @@ if df.empty:
     st.info("No campaign stats in the database for this selection yet.")
     st.stop()
 
+st.caption(
+    f"Loaded {len(df):,} campaign-day rows from "
+    f"{pd.to_datetime(df['stat_date']).min().date()} to "
+    f"{pd.to_datetime(df['stat_date']).max().date()}."
+)
+
 numeric_cols = [
     "amount_spent",
     "app_installs",
